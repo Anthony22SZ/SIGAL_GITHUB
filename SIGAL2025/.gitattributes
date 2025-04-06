@@ -1,0 +1,15 @@
+# Normalización de finales de línea
+* text=auto
+* text=auto eol=lf
+
+# Configuración de diferencias para ciertos archivos
+*.blade.php diff=html
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
+
+# Archivos ignorados en exportaciones
+/.github export-ignore
+CHANGELOG.md export-ignore
+.styleci.yml export-ignore
