@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-    <h1 class="mb-4 text-xl font-bold text-gray-900 dark:text-white">PROVEEDORES</h1>
+    <h1 class="px-6 py-3 dark:bg-gray-900 text-2xl font-semibold text-gray-900 dark:text-white">PROVEEDORES</h1>
     <div class="pb-4 bg-white dark:bg-gray-900 flex justify-between items-center">
         <div>
             <label for="table-search" class="sr-only">Buscar</label>
@@ -59,15 +59,29 @@
                     <td class="px-6 py-4">{{ $proveedor['NUMERO_TELEFONO'] ?? 'N/A' }}</td>
                     <td class="px-6 py-4">{{ $proveedor['CORREO_ELECTRONICO'] ?? 'N/A' }}</td>
                     <td class="px-6 py-4">
-                    <div>
-                        <a href="{{ route('proveedores.mostrar-actualizar', $proveedor['COD_PROVEEDORES']) }}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">Editar</a>
-                    </div>
-                    <form action="{{ route('proveedores.eliminar', $proveedor['COD_PROVEEDORES']) }}" method="POST" style="display:inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline" onclick="return confirm('¿Estás seguro de que deseas eliminar este proveedor?');">Eliminar</button>
-                        </form>
-                    </td>
+    <div class="flex justify-center items-center space-x-2">
+        <!-- Editar -->
+        <div>
+            <a href="{{ route('proveedores.mostrar-actualizar', $proveedor['COD_PROVEEDORES']) }}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline flex items-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path>
+                </svg>
+            </a>
+        </div>
+        <!-- Eliminar -->
+        <div>
+            <form action="{{ route('proveedores.eliminar', $proveedor['COD_PROVEEDORES']) }}" method="POST" style="display:inline;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline flex items-center" onclick="return confirm('¿Estás seguro de que deseas eliminar este proveedor?');">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0V3a1 1 0 011-1h2a1 1 0 011 1v1m-7 0h10"></path>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</td>
                 </tr>
             @endforeach
         @else
@@ -107,4 +121,3 @@
     });
 </script>
 @endsection
-

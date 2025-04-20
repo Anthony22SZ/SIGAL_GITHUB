@@ -951,7 +951,7 @@ app.post('/usuarios', async (req, res) => {
                 from: 'tu_correo@gmail.com',
                 to: correo_electronico,
                 subject: 'Datos de acceso a la plataforma',
-                text: `Hola,\n\nTu cuenta ha sido creada exitosamente. Aquí están tus datos de acceso:\n\nNombre de usuario: ${nombre_usuario}\nContraseña: ${contrasena}\n\nPor favor, cambia tu contraseña después de iniciar sesión.\n\nSaludos,\nEl equipo de soporte`
+                text: `Hola,\n\nTu cuenta ha sido creada exitosamente. Aquí están tus datos de acceso:\n\nNombre de usuario: ${nombre_usuario}\nContraseña: ${contrasena}\n\nPor favor, cambia tu contraseña antes de iniciar sesión.\n\nSaludos,\nEl equipo de soporte`
             };
 
             await transporter.sendMail(mailOptions);
@@ -2357,6 +2357,7 @@ app.get('/api/facturas/:cod_factura/impresion', async (req, res) => {
             'CALL sp_ObtenerDatosImpresionFactura(?)',
             [cod_factura]
         );
+
         const organizedData = {};
         const expectedSections = [
             'DATOS_EMPRESA', 'DATOS_FACTURA', 'DATOS_CLIENTE', 'DATOS_CAI',
@@ -2370,6 +2371,7 @@ app.get('/api/facturas/:cod_factura/impresion', async (req, res) => {
                 organizedData[sectionLabel] = sectionData.length > 0 ? sectionData : [];
             }
         }
+
         // Reordenar para que DATOS_EMPRESA esté primero
         const finalData = {};
         if (organizedData['DATOS_EMPRESA']) {

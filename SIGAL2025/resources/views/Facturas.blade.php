@@ -3,6 +3,8 @@
 @section('title', 'Facturas de Compra - SIGAL')
 
 @section('content')
+<div id="facturas-container" class="relative overflow-x-auto shadow-md sm:rounded-lg">
+  
 <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
     <h1 class="px-6 py-3 dark:bg-gray-900 text-2xl font-semibold text-gray-900 dark:text-white">FACTURAS DE COMPRA</h1>
     
@@ -16,7 +18,7 @@
             {{ session('error') }}
         </div>
     @endif
-
+    
     <div class="pb-4 bg-white dark:bg-gray-900 flex justify-between items-center">
         <div>
             <label for="table-search" class="sr-only">Buscar</label>
@@ -55,7 +57,11 @@
                    
                     <td class="px-6 py-4">{{ $factura['TOTAL'] ?? 'N/A' }}</td>
                     <td class="px-6 py-4">
-                        <button data-numero-factura="{{ $factura['NUMERO_FACTURA'] }}" class="ver-detalle font-medium text-blue-600 dark:text-blue-500 hover:underline">Ver Detalles</button>
+                        <button data-numero-factura="{{ $factura['NUMERO_FACTURA'] }}" class="ver-detalle font-medium text-blue-600 dark:text-blue-500 hover:underline"><svg class="w-5 h-5 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-width="2" d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6Z"/>
+                                    <path stroke="currentColor" stroke-width="2" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                                    </svg>
+                        </button>
                     </td>
                 </tr>
             @endforeach
@@ -69,10 +75,10 @@
         </tbody>
     </table>
 </div>
-
+</div>
 
 <!-- Modal -->
-<div id="detalle-modal" class="fixed inset-0 backdrop-blur-sm flex items-center justify-center hidden" style="backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);">
+<div id="detalle-modal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden flex justify-center items-center">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 w-full max-h-xl max-w-2xl">
         <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Detalles de Factura</h2>
@@ -87,7 +93,23 @@
         </div>
     </div>
 </div>
+<style>
+    /* Fondo del modal con transparencia */
+    #detalle-modal {
+        background: rgba(0, 0, 0, 0.5); /* Fondo semitransparente */
+    }
 
+    /* Efecto de desenfoque en el contenedor principal cuando el modal está visible */
+    #detalle-modal:not(.hidden) ~ #facturas-container {
+        filter: blur(4px); /* Desenfoque del fondo */
+        transition: filter 0.3s ease;
+    }
+
+    /* Restaurar el estado normal cuando el modal está oculto */
+    #facturas-container {
+        transition: filter 0.3s ease;
+    }
+</style>
 <script>
     // Búsqueda en la tabla
     document.getElementById('table-search').addEventListener('input', function() {

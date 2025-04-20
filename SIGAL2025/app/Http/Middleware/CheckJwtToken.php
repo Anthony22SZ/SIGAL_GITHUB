@@ -58,6 +58,18 @@ class CheckJwtToken
                 'clientes.crear'=> 'Clientes',
                 'clientes.insertar'=> 'Clientes',
                 'clientes.editar'=> 'Clientes',
+                'sucursales.index' => 'Sucursales',
+                'sucursales.create' => 'Sucursales',
+                'sucursales.store' => 'Sucursales',
+                'sucursales.edit' => 'Sucursales',
+                'sucursales.update' => 'Sucursales',
+                'sucursales.toggleState' => 'Sucursales',
+                'facturas.index' => 'FacturasVentas',
+                'facturas.create' => 'FacturasVentas',
+                'facturas.store' => 'FacturasVentas',
+                'facturas.show'=> 'FacturasVentas',
+                
+
             ];
 
             $object = $routeToObject[$routeName] ?? null;

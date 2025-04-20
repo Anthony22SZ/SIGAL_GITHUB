@@ -7,6 +7,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+      <!-- Carga los assets compilados con Vite -->
+      @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script>
+        window.APP_URL = "{{ url('') }}"; // Esto genera http://localhost/SIGAL2025/public en XAMPP
+    </script>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gray-50 p-6">
     <div class="p-6 bg-white rounded-lg shadow-md w-full max-w-md">

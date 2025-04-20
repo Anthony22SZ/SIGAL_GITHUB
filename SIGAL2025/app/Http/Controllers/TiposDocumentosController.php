@@ -61,14 +61,18 @@ class TiposDocumentosController extends Controller
      */
     public function crear(Request $request)
     {
-        $request->validate([
-            'codigo' => 'required|string|max:20',
-            'nombre' => 'required|string|max:100',
-            'descripcion' => 'nullable|string|max:255',
-            'afecta_inventario' => 'nullable|boolean',
-            'requiere_cliente' => 'nullable|boolean',
+        $validated = $request->validate([
+            'codigo' => 'required|digits:2', // 2 dígitos numéricos
+            'nombre' => 'required|string|max:30', // Cadena, máximo 50 caracteres
+            'descripcion' => 'nullable|string|max:50', // Opcional, máximo 200 caracteres
+            'afecta_inventario' => 'nullable|boolean', // Opcional, 0 o 1
+            'requiere_cliente' => 'nullable|boolean', // Opcional, 0 o 1
         ]);
 
+        // Convertir los checkboxes a valores booleanos (0 o 1)
+        $validated['afecta_inventario'] = $request->has('afecta_inventario') ? 1 : 0;
+        $validated['requiere_cliente'] = $request->has('requiere_cliente') ? 1 : 0;
+        
         $data = [
             'codigo' => $request->codigo,
             'nombre' => $request->nombre,

@@ -3,6 +3,8 @@
 @section('title', 'Registrar Traslado - SIGAL')
 
 @section('content')
+
+<div id="traslados-container" class="relative overflow-x-auto shadow-md sm:rounded-lg">
 <section class="bg-white dark:bg-gray-900">
     <div class="py-4 px-4 mx-auto max-w-7xl lg:py-8">
         <div class="flex justify-between items-center mb-4">
@@ -132,9 +134,9 @@
         </div>
     </div>
 </section>
-
+</div>
 <!-- Modal para Agregar Producto -->
-<div id="producto-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 dark:bg-opacity-80">
+<div id="producto-modal" tabindex="-1" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-gray-900 bg-opacity-50 dark:bg-opacity-80">
     <div class="relative w-full max-w-md p-4">
         <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
             <div class="flex items-center justify-between p-4 border-b rounded-t dark:border-gray-600">
@@ -167,6 +169,23 @@
         </div>
     </div>
 </div>
+<style>
+    /* Fondo del modal con transparencia */
+    #producto-modal {
+        background: rgba(0, 0, 0, 0.5); /* Fondo semitransparente */
+    }
+
+    /* Efecto de desenfoque en el contenedor principal cuando el modal está visible */
+    #producto-modal:not(.hidden) ~ #traslados-container {
+        filter: blur(4px); /* Desenfoque del fondo */
+        transition: filter 0.3s ease;
+    }
+
+    /* Restaurar el estado normal cuando el modal está oculto */
+    #traslados-container {
+        transition: filter 0.3s ease;
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {

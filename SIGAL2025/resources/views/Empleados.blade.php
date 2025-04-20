@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-    <h1 class="px-6 py-3 dark:bg-gray-900">EMPLEADOS</h1>
+    <h1 class="px-6 py-3 dark:bg-gray-900 text-2xl font-semibold text-gray-900 dark:text-white">EMPLEADOS</h1>
     <div class="pb-4 bg-white dark:bg-gray-900 flex justify-between items-center">
         <div>
             <label for="table-search" class="sr-only">Buscar</label>

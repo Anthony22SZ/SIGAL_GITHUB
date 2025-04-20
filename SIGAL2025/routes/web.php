@@ -27,6 +27,7 @@ use App\Http\Controllers\FacturasVentasController;
 use App\Http\Controllers\ObjetosController;
 use App\Http\Controllers\PermisosController;
 
+
 // Ruta para mostrar el formulario de login (si usas una vista de login)
 Route::get('/', function () {
     return view('Login');
@@ -64,6 +65,7 @@ Route::get('/dashboard', function () {
 })->name('dashboard');
 
 // Rutas para Clientes
+Route::middleware('jwt')->get('/api/clientes', [FacturasVentasController::class, 'getClientes'])->name('clientes');
 
 Route::get('/clientes', [ClientesController::class, 'listarCliente'])->name('clientes.listar');
 Route::get('/clientes/crear', [ClientesController::class, 'crearCliente'])->name('clientes.crear');
@@ -192,19 +194,18 @@ Route::post('/tipos-documento', [TiposDocumentosController::class, 'crear'])->na
 
 
 
+Route::get('/Facturas', [FacturasVentasController::class, 'index'])->name('facturas.index');
+Route::get('/Facturas/crear', [FacturasVentasController::class, 'create'])->name('facturas.create');
+Route::post('/Facturas', [FacturasVentasController::class, 'crearFacturaVenta'])->name('facturas.store');
+Route::get('/Facturas/{cod_factura}', [FacturasVentasController::class, 'show'])->name('facturas.show');
 
-/*
-    Route::get('/Facturas', [FacturasVentasController::class, 'index'])->name('index');
-    Route::get('/Facturas/crear', [FacturasVentasController::class, 'create'])->name('FacturasVenta');
-    Route::post('/venta', [FacturasVentasController::class, 'crearFacturaVenta'])->name('store');
-    Route::get('/{cod_factura}', [FacturasVentasController::class, 'show'])->name('show');
-    Route::post('/venta/{cod_factura}/productos', [FacturasVentasController::class, 'agregarProductoFactura'])->name('add-product');
-    Route::put('/venta/{cod_factura}/finalizar', [FacturasVentasController::class, 'finalizarFactura'])->name('finalize');
+// Nuevas rutas para clientes y productos
+Route::get('/clientes', [FacturasVentasController::class, 'getClientes'])->name('clientes');
+Route::get('/inventario-productos', [FacturasVentasController::class, 'getProductos'])->name('inventario.productos');
+Route::get('/inventario-productos', [FacturasVentasController::class, 'getProductos'])->name('inventario.productos');
 
-    Route::get('/facturas/datos', [FacturasVentasController::class, 'getDatosFacturacion'])->name('facturas.datos');
 
-Route::get('/facturas/clientes', [FacturasVentasController::class, 'getClientes'])->name('facturas.clientes');
-*/
+
 
 Route::middleware('jwt')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -232,4 +233,10 @@ Route::post('/objetos/insertar', [ObjetosController::class, 'insertar'])->name('
 
 Route::get('/permisos', [PermisosController::class, 'index'])->name('permisos.index');
 Route::post('/permisos/guardar', [PermisosController::class, 'guardar'])->name('permisos.guardar');
+
+Route::get('/Facturas', [FacturasVentasController::class, 'index'])->name('facturas.index');
+Route::get('/Facturas/crear', [FacturasVentasController::class, 'create'])->name('facturas.create');
+Route::post('/Facturas', [FacturasVentasController::class, 'crearFacturaVenta'])->name('facturas.store');
+Route::get('/Facturas/{cod_factura}', [FacturasVentasController::class, 'show'])->name('facturas.show');
+
 });

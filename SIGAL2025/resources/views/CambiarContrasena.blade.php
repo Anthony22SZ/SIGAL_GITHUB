@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    
 </head>
 <body class="bg-gray-50">
     <div class="flex items-center justify-center min-h-screen p-6">

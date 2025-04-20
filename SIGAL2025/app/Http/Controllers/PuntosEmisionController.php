@@ -91,11 +91,11 @@ class PuntosEmisionController extends Controller
      */
     public function crear(Request $request)
     {
-        $request->validate([
-            'codigo' => 'required|string|max:20',
-            'nombre' => 'required|string|max:100',
-            'establecimiento' => 'required|string|max:50',
-            'cod_sucursal' => 'required|string|max:20',
+        $validated = $request->validate([
+            'codigo' => 'required|digits:3', // Solo 3 dígitos numéricos
+            'nombre' => 'required|string|max:30', // Cadena de texto, máximo 100 caracteres
+            'establecimiento' => 'required|digits:3', // Solo 3 dígitos numéricos
+            'cod_sucursal' => 'required|string|max:20|exists:sucursales,COD_SUCURSAL', // Cadena de texto, máximo 20 caracteres, debe existir en la tabla sucursales
         ]);
 
         $data = $request->only(['codigo', 'nombre', 'establecimiento', 'cod_sucursal']);
@@ -211,3 +211,4 @@ class PuntosEmisionController extends Controller
         }
     }
 }
+

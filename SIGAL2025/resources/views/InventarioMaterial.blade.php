@@ -4,7 +4,7 @@
 
 @section('content')
 <div id="inventario-container" class="relative overflow-x-auto shadow-md sm:rounded-lg">
-    <h1 class="px-6 py-3 dark:bg-gray-900">INVENTARIO</h1>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">INVENTARIO MATERIAL</h1>
     <div class="pb-4 bg-white dark:bg-gray-900 flex justify-between items-center">
         <div>
             <label for="table-search" class="sr-only">Buscar</label>
@@ -57,7 +57,10 @@
                     <td class="px-6 py-4">{{ $item['STOCK_ACTUAL'] ?? 'N/A' }}</td>
                     <td class="px-6 py-4">{{ $item['STOCK_MINIMO'] ?? 'N/A' }}</td>
                     <td class="px-6 py-4">
-                        <button type="button" class="salida-btn text-blue-600 hover:underline" data-codigo="{{ $item['MATERIAL_CODIGO'] ?? 'N/A' }}">Salida Material</button>
+                        <button type="button" class="salida-btn text-blue-600 hover:underline" data-codigo="{{ $item['MATERIAL_CODIGO'] ?? 'N/A' }}"><svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12H4m12 0-4 4m4-4-4-4m3-4h2a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-2"/>
+</svg>
+</button>
                     </td>
                 </tr>
             @endforeach
@@ -73,7 +76,7 @@
 </div>
 
 <!-- Modal de Flowbite -->
-<div id="salida-modal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden flex justify-center items-center">
+<div id="salida-modal" tabindex="-1" class="hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full bg-black bg-opacity-50">
     <div class="relative p-4 w-full max-w-md max-h-full">
         <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
             <div class="flex items-center justify-between p-4 border-b rounded-t dark:border-gray-600">

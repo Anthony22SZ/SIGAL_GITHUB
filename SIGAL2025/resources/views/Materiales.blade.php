@@ -1,11 +1,10 @@
-
 @extends('layouts.app')
 
 @section('title', 'Materiales - SIGAL')
 
 @section('content')
 <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-    <h1 class="px-6 py-3 dark:bg-gray-900">MATERIALES</h1>
+    <h1 class="px-6 py-3 dark:bg-gray-900 text-2xl font-semibold text-gray-900 dark:text-white">MATERIALES</h1>
     <div class="pb-4 bg-white dark:bg-gray-900 flex justify-between items-center">
         <div>
             <label for="table-search" class="sr-only">Buscar</label>
@@ -50,12 +49,19 @@
                     <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ $material['CODIGO'] ?? 'N/A' }}</td>
                     <td class="px-6 py-4">{{ $material['MATERIAL'] ?? 'N/A' }}</td>
                     <td class="px-6 py-4">
-                        <a href="#" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">Editar</a>
-                        <div>
-                        <a href="#" class="font-medium text-red-600 dark:text-red-500 hover:underline btn-eliminar" data-codigo="{{ $material['CODIGO'] }}">Eliminar</a>
-</div>
-
-                    </td>
+    <div class="flex items-center space-x-2">
+        <a href="#" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path>
+            </svg>
+        </a>
+        <a href="#" class="font-medium text-red-600 dark:text-red-500 hover:underline btn-eliminar"  data-codigo="{{ $material['CODIGO'] }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0V3a1 1 0 011-1h2a1 1 0 011 1v1m-7 0h10"></path>
+            </svg>
+        </a>
+    </div>
+</td>
                 </tr>
             @endforeach
         @else
@@ -68,6 +74,9 @@
         </tbody>
     </table>
 </div>
+
+<!-- Meta tag CSRF -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 <script>
     document.getElementById('table-search').addEventListener('input', function() {
@@ -94,34 +103,48 @@
         });
     });
     
-    document.addEventListener('DOMContentLoaded', function () {
+    // Función para eliminar materiales sin alerta de éxito
+    document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.btn-eliminar').forEach(button => {
-            button.addEventListener('click', function (event) {
+            button.addEventListener('click', async function(event) {
                 event.preventDefault();
                 const codigo = this.getAttribute('data-codigo');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                if (!confirm(`¿Estás seguro de que deseas eliminar el material con código ${codigo}?`)) {
+                console.log('Intentando eliminar material con código:', codigo); // Depuración
+
+                if (!confirm(`¿Estás seguro de eliminar el material con código ${codigo}?`)) {
                     return;
                 }
 
-                fetch(`/api/eliminar-material/${codigo}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Content-Type': 'application/json'
+                try {
+                    const response = await fetch(`/eliminar-material/${codigo}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    console.log('Estado de la respuesta:', response.status); // Depuración
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        console.log('Datos de error:', data); // Depuración
+                        throw new Error(data.error || 'Error al eliminar el material');
                     }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    location.reload(); // Recargar la página para actualizar la lista
-                })
-                .catch(error => {
-                    console.error('Error al eliminar el material:', error);
-                    alert('Error al eliminar el material.');
-                });
+
+                    // Eliminamos el alert y recargamos directamente
+                    location.reload();
+                } catch (error) {
+                    console.error('Error al eliminar:', error);
+                    alert(error.message || 'Ocurrió un error al eliminar el material');
+                }
             });
         });
     });
 </script>
 @endsection
+

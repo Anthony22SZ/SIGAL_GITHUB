@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-    <h1 class="mb-4 text-xl font-bold text-gray-900 dark:text-white">CLIENTES</h1>
+    <h1 class="px-6 py-3 dark:bg-gray-900 text-2xl font-semibold text-gray-900 dark:text-white">CLIENTES</h1>
     <div class="pb-4 bg-white dark:bg-gray-900 flex justify-between items-center">
         <div>
             <label for="table-search" class="sr-only">Buscar</label>
@@ -76,8 +76,7 @@
         </form>
     </div>
 </td>
-
-                </tr>
+            </tr>
             @endforeach
         @else
             <tr>
@@ -112,4 +111,3 @@
     });
 </script>
 @endsection
-

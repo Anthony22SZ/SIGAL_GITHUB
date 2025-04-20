@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class FacturasVentasController extends Controller
 {
@@ -20,122 +21,109 @@ class FacturasVentasController extends Controller
         ]);
     }
 
-    /**
-     * Listar facturas
-     */
-    public function index(Request $request)
-    {
-        try {
-            $response = $this->client->get('/api/facturas', [
-                'query' => [
-                    'numero_factura' => $request->query('numero_factura'),
-                    'numero_fiscal' => $request->query('numero_fiscal'),
-                    'nombre_cliente' => $request->query('nombre_cliente'),
-                    'fecha_inicio' => $request->query('fecha_inicio'),
-                    'fecha_fin' => $request->query('fecha_fin'),
-                    'estado' => $request->query('estado'),
-                ]
-            ]);
+  /**
+ * Mostrar la lista de facturas
+ */
+public function index()
+{
+    try {
+        // Obtener la lista de facturas
+        $response = $this->client->get('/api/facturas', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . session('api_token', ''),
+                'Content-Type' => 'application/json',
+            ],
+        ]);
 
-            $responseBody = json_decode($response->getBody()->getContents(), true);
-            Log::info('Respuesta de /api/facturas:', $responseBody);
+        $responseBody = json_decode($response->getBody()->getContents(), true);
+        Log::info('Respuesta de /api/facturas:', $responseBody);
 
-            if (!isset($responseBody['success']) || !$responseBody['success']) {
-                $errorMessage = $responseBody['error'] ?? 'Error desconocido al obtener facturas';
-                Log::error('Error en /api/facturas: ' . $errorMessage);
-                return view('facturas.index')->with('error', 'Error al cargar las facturas: ' . $errorMessage);
-            }
-
-            $facturas = $responseBody['data'] ?? [];
-            return view('facturas.index', compact('facturas'));
-
-        } catch (RequestException $e) {
-            $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-            Log::error('Error al listar facturas: ' . $errorMessage);
-            return view('facturas.index')->with('error', 'Error al cargar las facturas: ' . $errorMessage);
+        if ($response->getStatusCode() !== 200 || !isset($responseBody['success']) || !$responseBody['success']) {
+            return redirect()->route('dashboard')->with('error', 'No se pudieron obtener las facturas');
         }
-    }
 
+        $facturas = $responseBody['data'];
+
+        // Renderizar la vista para la lista de facturas
+        return view('ListarFacturasVenta', [
+            'facturas' => $facturas
+        ]);
+
+    } catch (RequestException $e) {
+        $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+        Log::error('Error al obtener la lista de facturas: ' . $errorMessage);
+        return redirect()->route('dashboard')->with('error', $errorMessage);
+    } catch (\Exception $e) {
+        Log::error('Error general al obtener la lista de facturas: ' . $e->getMessage());
+        return redirect()->route('dashboard')->with('error', $e->getMessage());
+    }
+}
     /**
      * Mostrar formulario para crear factura
      */
-    
+    public function create()
+    {
+        try {
+            $headers = ['Authorization' => 'Bearer ' . session('api_token', '')];
 
-public function create()
+            // Obtener tipos de documento
+            $responseTipos = $this->client->get('/api/tipos-documento', [
+                'headers' => $headers,
+                'query' => ['estado' => 'ACTIVO']
+            ]);
+            $tiposBody = json_decode($responseTipos->getBody()->getContents(), true);
+            Log::info('Respuesta de /api/tipos-documento:', $tiposBody);
+            if (!isset($tiposBody['success']) || !$tiposBody['success'] || empty($tiposBody['data'])) {
+                $errorMessage = $tiposBody['error'] ?? 'No se encontraron tipos de documento';
+                Log::error('Error en /api/tipos-documento: ' . $errorMessage);
+                return redirect()->back()->with('error', 'Error al cargar tipos de documento: ' . $errorMessage);
+            }
+            $tiposDocumento = $tiposBody['data'];
+
+            // Obtener puntos de emisión
+            $responsePuntos = $this->client->get('/api/puntos-emision', [
+                'headers' => $headers,
+                'query' => ['estado' => 'ACTIVO']
+            ]);
+            $puntosBody = json_decode($responsePuntos->getBody()->getContents(), true);
+            Log::info('Respuesta de /api/puntos-emision:', $puntosBody);
+            if (!isset($puntosBody['success']) || !$puntosBody['success'] || empty($puntosBody['data'])) {
+                $errorMessage = $puntosBody['error'] ?? 'No se encontraron puntos de emisión';
+                Log::error('Error en /api/puntos-emision: ' . $errorMessage);
+                return redirect()->back()->with('error', 'Error al cargar puntos de emisión: ' . $errorMessage);
+            }
+            $puntosEmision = $puntosBody['data'];
+
+            // Obtener sucursales
+            $responseSucursales = $this->client->get('/sucursales', [
+                'headers' => $headers,
+                'query' => ['estado' => 'ACTIVA']
+            ]);
+            $sucursalesBody = json_decode($responseSucursales->getBody()->getContents(), true);
+            Log::info('Respuesta de /sucursales:', $sucursalesBody);
+            if (!isset($sucursalesBody['success']) || !$sucursalesBody['success'] || empty($sucursalesBody['data'])) {
+                $errorMessage = $sucursalesBody['error'] ?? 'No se encontraron sucursales';
+                Log::error('Error en /sucursales: ' . $errorMessage);
+                return redirect()->back()->with('error', 'Error al cargar sucursales: ' . $errorMessage);
+            }
+            $sucursales = $sucursalesBody['data'];
+
+            // Pasar datos a la vista
+            return view('FacturasVenta', compact('tiposDocumento', 'puntosEmision', 'sucursales'));
+        } catch (RequestException $e) {
+            $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            Log::error('Error al cargar formulario de factura: ' . $errorMessage);
+            return redirect()->back()->with('error', 'Error al cargar el formulario: ' . $errorMessage);
+        }
+    }
+
+ /**
+ * Crear factura de venta
+ */
+public function crearFacturaVenta(Request $request)
 {
     try {
-        // Obtener tipos de documento
-        $responseTipos = $this->client->get('/api/tipos-documento', ['query' => ['estado' => 'ACTIVO']]);
-        $tiposBody = json_decode($responseTipos->getBody()->getContents(), true);
-        Log::info('Respuesta de /api/tipos-documento:', $tiposBody);
-        if (!isset($tiposBody['success']) || !$tiposBody['success']) {
-            $errorMessage = $tiposBody['error'] ?? 'Error desconocido al obtener tipos de documento';
-            Log::error('Error en /api/tipos-documento: ' . $errorMessage);
-            return redirect()->back()->with('error', 'Error al cargar tipos de documento: ' . $errorMessage);
-        }
-        $tiposDocumento = $tiposBody['data'] ?? [];
-
-        // Obtener puntos de emisión
-        $responsePuntos = $this->client->get('/api/puntos-emision', ['query' => ['estado' => 'ACTIVO']]);
-        $puntosBody = json_decode($responsePuntos->getBody()->getContents(), true);
-        Log::info('Respuesta de /api/puntos-emision:', $puntosBody);
-        if (!isset($puntosBody['success']) || !$puntosBody['success']) {
-            $errorMessage = $puntosBody['error'] ?? 'Error desconocido al obtener puntos de emisión';
-            Log::error('Error en /api/puntos-emision: ' . $errorMessage);
-            return redirect()->back()->with('error', 'Error al cargar puntos de emisión: ' . $errorMessage);
-        }
-        $puntosEmision = $puntosBody['data'] ?? [];
-
-        // Obtener sucursales
-        $responseSucursales = $this->client->get('/sucursales', ['query' => ['estado' => 'ACTIVA']]);
-        $sucursalesBody = json_decode($responseSucursales->getBody()->getContents(), true);
-        Log::info('Respuesta de /sucursales:', $sucursalesBody);
-        if (!isset($sucursalesBody['success']) || !$sucursalesBody['success']) {
-            $errorMessage = $sucursalesBody['error'] ?? 'Error desconocido al obtener sucursales';
-            Log::error('Error en /sucursales: ' . $errorMessage);
-            return redirect()->back()->with('error', 'Error al cargar sucursales: ' . $errorMessage);
-        }
-        $sucursales = $sucursalesBody['data'] ?? [];
-
-        // Obtener clientes desde el endpoint /clientes
-        $responseClientes = $this->client->get('/clientes');
-        $clientes = json_decode($responseClientes->getBody()->getContents(), true);
-        Log::info('Respuesta de /clientes:', $clientes);
-
-        // Verificar si la respuesta de clientes es válida
-        if (!is_array($clientes)) {
-            $clientes = [];
-            Log::warning('No se encontraron clientes o respuesta inválida desde /clientes');
-        }
-
-        // Obtener productos desde el endpoint /inventario-productos
-        $responseProductos = $this->client->get('/inventario-productos');
-        $productosBody = json_decode($responseProductos->getBody()->getContents(), true);
-        Log::info('Respuesta de /inventario-productos:', $productosBody);
-
-        // Verificar si la respuesta de productos es válida
-        if (!isset($productosBody['success']) || !$productosBody['success']) {
-            Log::error('Error al obtener productos desde /inventario-productos: ' . ($productosBody['error'] ?? 'Error desconocido'));
-            $productos = [];
-        } else {
-            $productos = $productosBody['data'] ?? [];
-        }
-
-        // Pasar todos los datos a la vista
-        return view('FacturasVenta', compact('tiposDocumento', 'puntosEmision', 'sucursales', 'clientes', 'productos'));
-    } catch (RequestException $e) {
-        $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-        Log::error('Error al cargar formulario de factura: ' . $errorMessage);
-        return redirect()->back()->with('error', 'Error al cargar el formulario: ' . $errorMessage);
-    }
-}
-
-    /**
-     * Crear una nueva factura
-     */
-    public function crearFacturaVenta(Request $request)
-    {
-        $request->validate([
+        $validated = $request->validate([
             'cod_cliente' => 'nullable|integer',
             'cod_sucursal' => 'required|integer',
             'cod_empleado' => 'required|integer',
@@ -144,88 +132,187 @@ public function create()
             'metodo_pago' => 'required|string',
             'cod_tipo_documento' => 'required|integer',
             'cod_punto_emision' => 'required|integer',
-            'productos' => 'required|json',
+            'productos' => 'required|json'
         ]);
 
-        $data = $request->only([
-            'cod_cliente', 'cod_sucursal', 'cod_empleado', 'impuesto',
-            'descuento', 'metodo_pago', 'cod_tipo_documento', 'cod_punto_emision'
-        ]);
+        $data = $validated;
+        $productos = json_decode($data['productos'], true);
+        unset($data['productos']); // Quita los productos para la primera petición
+
         Log::info('Datos enviados para crear factura:', $data);
 
-        try {
-            $response = $this->client->post('/api/facturas/venta', [
-                'json' => $data
+        // 1. Crear la factura
+        $response = $this->client->post('/api/facturas/venta', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . session('api_token', ''),
+                'Content-Type' => 'application/json',
+            ],
+            'json' => $data
+        ]);
+
+        $responseBody = json_decode($response->getBody()->getContents(), true);
+        Log::info('Respuesta al crear factura:', $responseBody);
+
+        if ($response->getStatusCode() !== 201 || !isset($responseBody['data']['cod_factura'])) {
+            throw new \Exception('No se pudo crear la factura');
+        }
+
+        $cod_factura = $responseBody['data']['cod_factura'];
+        $numero_factura = $responseBody['data']['numero_factura'];
+        $numero_fiscal = $responseBody['data']['numero_fiscal'];
+
+        // 2. Agregar los productos
+        foreach ($productos as $producto) {
+            $productoData = [
+                'codigo_producto' => $producto['codigo_producto'],
+                'cantidad' => $producto['cantidad'],
+                'precio_override' => $producto['precio'] ?? null
+            ];
+
+            $productoResponse = $this->client->post("/api/facturas/venta/{$cod_factura}/productos", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('api_token', ''),
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $productoData
             ]);
 
-            $responseBody = json_decode($response->getBody()->getContents(), true);
-            Log::info('Respuesta al crear factura:', $responseBody);
-
-            if ($response->getStatusCode() === 201) {
-                $cod_factura = $responseBody['data']['cod_factura'];
-
-                $productos = json_decode($request->input('productos'), true);
-                foreach ($productos as $producto) {
-                    $productoData = [
-                        'codigo_producto' => $producto['codigo_producto'],
-                        'cantidad' => $producto['cantidad'],
-                        'precio_override' => $producto['precio']
-                    ];
-                    $this->client->post("/api/facturas/venta/{$cod_factura}/productos", [
-                        'json' => $productoData
-                    ]);
-                }
-
-                return redirect()->route('facturas.show', ['cod_factura' => $cod_factura])
-                    ->with('success', $responseBody['message'] ?? 'Factura creada exitosamente');
-            }
-
-            $errorMessage = $responseBody['error'] ?? 'Error desconocido al crear la factura';
-            Log::error('Error al crear factura: ' . $errorMessage);
-            return redirect()->back()->with('error', $errorMessage)->withInput();
-
-        } catch (RequestException $e) {
-            $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-            Log::error('Error al crear factura: ' . $errorMessage);
-            return redirect()->back()->with('error', 'Error al crear la factura: ' . $errorMessage)->withInput();
+            Log::info("Producto agregado a factura {$cod_factura}:", [
+                'producto' => $productoData,
+                'response' => json_decode($productoResponse->getBody()->getContents(), true)
+            ]);
         }
-    }
 
-    /**
-     * Mostrar detalles de factura y formulario para agregar productos
-     */
-    public function show($cod_factura)
-    {
-        try {
-            $response = $this->client->get("/api/facturas/{$cod_factura}/impresion");
-            $responseBody = json_decode($response->getBody()->getContents(), true);
-            Log::info('Respuesta de /api/facturas/{cod_factura}/impresion:', $responseBody);
+        // 3. Finalizar la factura usando PUT
+        $finalizarResponse = $this->client->put("/api/facturas/venta/{$cod_factura}/finalizar", [
+            'headers' => [
+                'Authorization' => 'Bearer ' . session('api_token', ''),
+                'Content-Type' => 'application/json',
+            ],
+            'json' => ['metodo_pago' => $data['metodo_pago']]
+        ]);
 
-            if (!isset($responseBody['success']) || !$responseBody['success']) {
-                $errorMessage = $responseBody['error'] ?? 'Error desconocido al obtener datos de la factura';
-                Log::error('Error en /api/facturas/{cod_factura}/impresion: ' . $errorMessage);
-                return redirect()->route('facturas.index')->with('error', 'Error al cargar la factura: ' . $errorMessage);
-            }
+        $finalizarBody = json_decode($finalizarResponse->getBody()->getContents(), true);
+        Log::info("Factura {$cod_factura} finalizada:", [
+            'response' => $finalizarBody
+        ]);
 
-            $facturaData = $responseBody['data'] ?? [];
-            return view('facturas.show', compact('facturaData', 'cod_factura'));
-
-        } catch (RequestException $e) {
-            $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-            Log::error('Error al mostrar factura: ' . $errorMessage);
-            return redirect()->route('facturas.index')->with('error', 'Error al cargar la factura: ' . $errorMessage);
+        if ($finalizarResponse->getStatusCode() !== 200 || !isset($finalizarBody['success']) || !$finalizarBody['success']) {
+            throw new \Exception($finalizarBody['error'] ?? 'No se pudo finalizar la factura');
         }
-    }
 
+        // 4. Obtener los datos de la factura para el resumen
+        $facturaResponse = $this->client->get("/api/facturas/{$cod_factura}/impresion", [
+            'headers' => [
+                'Authorization' => 'Bearer ' . session('api_token', ''),
+                'Content-Type' => 'application/json',
+            ],
+        ]);
+
+        $facturaData = json_decode($facturaResponse->getBody()->getContents(), true);
+        Log::info("Datos de la factura {$cod_factura} para impresión:", $facturaData);
+
+        if ($facturaResponse->getStatusCode() !== 200 || !isset($facturaData['success']) || !$facturaData['success']) {
+            throw new \Exception('No se pudieron obtener los datos de la factura');
+        }
+
+        // Preparar los datos para la vista
+        $factura = [
+            'cod_factura' => $cod_factura,
+            'numero_factura' => $numero_factura,
+            'numero_fiscal' => $numero_fiscal,
+            'cliente' => $facturaData['data']['DATOS_CLIENTE'][0]['NOMBRE_CLIENTE'],
+            'total' => $facturaData['data']['TOTALES'][0]['TOTAL'],
+            'metodo_pago' => $facturaData['data']['TOTALES'][0]['FORMA_PAGO'],
+            'fecha' => $facturaData['data']['DATOS_FACTURA'][0]['FECHA'],
+        ];
+
+        // 5. Redirigir a la vista de éxito
+        return view('FacturasVentaExito', [
+            'factura' => (object) $factura
+        ]);
+
+    } catch (RequestException $e) {
+        $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+        Log::error('Error al crear factura: ' . $errorMessage);
+        return redirect()->route('facturas.create')->with('error', $errorMessage);
+    } catch (\Exception $e) {
+        Log::error('Error general al crear factura: ' . $e->getMessage());
+        return redirect()->route('facturas.create')->with('error', $e->getMessage());
+    }
+}
+/**
+ * Mostrar los detalles de una factura
+ */
+public function show($cod_factura)
+{
+    try {
+        // Obtener los datos de la factura
+        $facturaResponse = $this->client->get("/api/facturas/{$cod_factura}/impresion", [
+            'headers' => [
+                'Authorization' => 'Bearer ' . session('api_token', ''),
+                'Content-Type' => 'application/json',
+            ],
+        ]);
+
+        $facturaData = json_decode($facturaResponse->getBody()->getContents(), true);
+        Log::info("Datos de la factura {$cod_factura} para impresión:", $facturaData);
+
+        if ($facturaResponse->getStatusCode() !== 200 || !isset($facturaData['success']) || !$facturaData['success']) {
+            Log::error("Error: No se pudieron obtener los datos de la factura. Estado: {$facturaResponse->getStatusCode()}");
+            return redirect()->route('facturas.index')->with('error', 'No se pudieron obtener los datos de la factura');
+        }
+
+        // Verificar si las secciones esperadas están presentes
+        if (!isset($facturaData['data']['DATOS_EMPRESA'][0]) ||
+            !isset($facturaData['data']['DATOS_FACTURA'][0]) ||
+            !isset($facturaData['data']['DATOS_CLIENTE'][0]) ||
+            !isset($facturaData['data']['DATOS_CAI'][0]) ||
+            !isset($facturaData['data']['DETALLE_PRODUCTOS']) ||
+            !isset($facturaData['data']['TOTALES'][0]) ||
+            !isset($facturaData['data']['LEYENDAS_FISCALES'][0])) {
+            Log::error("Error: Faltan secciones esperadas en los datos de la factura:", $facturaData['data']);
+            return redirect()->route('facturas.index')->with('error', 'Los datos de la factura están incompletos');
+        }
+
+        // Preparar los datos para la vista, convirtiendo cada subsección a objeto
+        $factura = [
+            'empresa' => (object) $facturaData['data']['DATOS_EMPRESA'][0],
+            'factura' => (object) $facturaData['data']['DATOS_FACTURA'][0],
+            'cliente' => (object) $facturaData['data']['DATOS_CLIENTE'][0],
+            'cai' => (object) $facturaData['data']['DATOS_CAI'][0],
+            'productos' => array_map(function ($producto) {
+                return (object) $producto;
+            }, $facturaData['data']['DETALLE_PRODUCTOS']),
+            'totales' => (object) $facturaData['data']['TOTALES'][0],
+            'leyendas' => (object) $facturaData['data']['LEYENDAS_FISCALES'][0],
+        ];
+
+        Log::info("Datos preparados para la vista:", (array) $factura);
+
+        // Renderizar la vista correcta
+        return view('FacturaMostrar', [
+            'factura' => (object) $factura
+        ]);
+
+    } catch (RequestException $e) {
+        $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+        Log::error('Error al obtener los datos de la factura: ' . $errorMessage);
+        return redirect()->route('facturas.index')->with('error', $errorMessage);
+    } catch (\Exception $e) {
+        Log::error('Error general al obtener los datos de la factura: ' . $e->getMessage());
+        return redirect()->route('facturas.index')->with('error', $e->getMessage());
+    }
+}
     /**
-     * Agregar producto a factura
+     * Agregar producto a factura (no usado en este flujo, pero mantenido por compatibilidad)
      */
     public function agregarProductoFactura(Request $request, $cod_factura)
     {
         $request->validate([
             'codigo_producto' => 'required|integer',
-            'cantidad' => 'required|numeric',
-            'precio_override' => 'nullable|numeric'
+            'cantidad' => 'required|numeric|min:1',
+            'precio_override' => 'nullable|numeric|min:0'
         ]);
 
         $data = $request->only(['codigo_producto', 'cantidad', 'precio_override']);
@@ -233,6 +320,9 @@ public function create()
 
         try {
             $response = $this->client->post("/api/facturas/venta/{$cod_factura}/productos", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('api_token', ''),
+                ],
                 'json' => $data
             ]);
 
@@ -256,12 +346,12 @@ public function create()
     }
 
     /**
-     * Finalizar factura
+     * Finalizar factura (no usado en este flujo, pero mantenido por compatibilidad)
      */
     public function finalizarFactura(Request $request, $cod_factura)
     {
         $request->validate([
-            'metodo_pago' => 'required|string'
+            'metodo_pago' => 'required|string|in:EFECTIVO,TARJETA,TRANSFERENCIA'
         ]);
 
         $data = $request->only(['metodo_pago']);
@@ -269,6 +359,9 @@ public function create()
 
         try {
             $response = $this->client->put("/api/facturas/venta/{$cod_factura}/finalizar", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . session('api_token', ''),
+                ],
                 'json' => $data
             ]);
 
@@ -291,40 +384,71 @@ public function create()
         }
     }
 
-    /**
-     * Obtener datos de facturación (clientes y productos)
-     */
-    public function getDatosFacturacion()
-{
-    try {
-        // Obtener clientes
-        $responseClientes = $this->client->get('/clientes');
-        $clientes = json_decode($responseClientes->getBody()->getContents(), true);
-        Log::info('Respuesta de /clientes:', $clientes);
-
-        // Obtener productos desde el endpoint /inventario-productos
-        $responseProductos = $this->client->get('/inventario-productos');
-        $productosBody = json_decode($responseProductos->getBody()->getContents(), true);
-        Log::info('Respuesta de /inventario-productos:', $productosBody);
-
-        // Verificar si la respuesta tiene el formato esperado
-        if (!isset($productosBody['success']) || !$productosBody['success']) {
-            $errorMessage = $productosBody['error'] ?? 'Error desconocido al obtener productos';
-            Log::error('Error en /inventario-productos: ' . $errorMessage);
-            return response()->json(['error' => 'Error al cargar los productos'], 500);
-        }
-
-        $productos = $productosBody['data'] ?? [];
-
-        // Devolver ambos conjuntos de datos en una sola respuesta
-        return response()->json([
-            'clientes' => $clientes,
-            'productos' => $productos
+    public function getClientes(Request $request)
+    {
+        \Log::info('Solicitud recibida en getClientes', [
+            'session_id' => session()->getId(),
+            'user' => Auth::check() ? Auth::user()->toArray() : 'No autenticado',
+            'query' => $request->query(),
+            'headers' => $request->headers->all()
         ]);
-    } catch (RequestException $e) {
-        $errorMessage = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-        Log::error('Error al obtener datos de facturación: ' . $errorMessage);
-        return response()->json(['error' => 'Error al cargar los datos'], 500);
+
+        try {
+            $response = $this->client->get('/clientes', [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => 'Bearer ' . session('api_token', ''),
+                ],
+                'query' => [
+                    'nombre' => $request->query('search'),
+                    'numero_identidad' => $request->query('numero_identidad'),
+                    'cod_cliente' => $request->query('cod_cliente'),
+                ]
+            ]);
+            $responseBody = $response->getBody()->getContents();
+            \Log::info('Respuesta cruda de /clientes: ' . $responseBody);
+            $data = json_decode($responseBody, true);
+            \Log::info('Respuesta parseada de /clientes:', $data);
+
+            if (empty($data)) {
+                return response()->json(['message' => 'No se encontraron clientes'], 200);
+            }
+
+            return response()->json($data);
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            $errorMessage = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            \Log::error('Error al cargar clientes: ' . $errorMessage);
+            return response()->json(['error' => 'Error al cargar clientes: ' . $errorMessage], 500);
+        } catch (\Exception $e) {
+            \Log::error('Error inesperado al cargar clientes: ' . $e->getMessage());
+            return response()->json(['error' => 'Error inesperado: ' . $e->getMessage()], 500);
+        }
     }
-}
+
+    /**
+     * Obtener lista de productos desde el API
+     */
+    public function getProductos(Request $request)
+    {
+        try {
+            $response = $this->client->get('/inventario-productos', [
+                'headers' => ['Authorization' => 'Bearer ' . session('api_token', '')],
+                'query' => [
+                    'nombre_sucursal' => $request->query('nombre_sucursal'),
+                ]
+            ]);
+
+            $responseBody = json_decode($response->getBody()->getContents(), true);
+            Log::info('Respuesta de /inventario-productos:', $responseBody);
+
+            if (!isset($responseBody['success']) || !$responseBody['success']) {
+                throw new \Exception($responseBody['message'] ?? 'Error al obtener productos');
+            }
+
+            return response()->json($responseBody);
+        } catch (\Exception $e) {
+            Log::error('Error al cargar productos: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al cargar productos: ' . $e->getMessage()], 500);
+        }
+    }
 }
